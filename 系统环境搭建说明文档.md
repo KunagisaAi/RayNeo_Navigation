@@ -1,0 +1,341 @@
+# RayNeo AR 导航应用 - 系统环境搭建说明文档
+
+---
+
+## 1. 项目概述
+
+### 1.1 项目简介
+
+本项目是一个基于 Unity 的 AR（增强现实）导航应用，专为 RayNeo X2 AR 智能眼镜设计。应用集成了语音识别、地图导航、手势交互等核心功能，为用户提供沉浸式的导航体验。
+
+### 1.2 核心功能
+
+| 功能模块 | 描述 | 技术实现 |
+|---------|------|---------|
+| 语音识别 | 支持语音输入关键词进行搜索 | 百度语音 SDK + Whisper Unity |
+| 地图导航 | 显示实时地图和路线规划 | 腾讯地图 API + UniWebView |
+| 手势交互 | 支持单击、双击、三击、滑动等手势 | SimpleTouch 事件系统 |
+| AR 显示 | 在 AR 场景中显示导航信息 | RayNeo OpenXR ARDK |
+
+### 1.3 技术架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Unity 应用层                           │
+├──────────────┬──────────────┬──────────────┬───────────────┤
+│ 语音识别模块  │  导航控制模块  │  手势交互模块  │   UI 显示模块   │
+│(BaiduASR)   │(SearchCtrl) │(SimpleTouch)│   (UGUI)      │
+└──────────────┴──────────────┴──────────────┴───────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     UniWebView 层                          │
+│         map.html + 腾讯地图 JavaScript API                  │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    RayNeo OpenXR ARDK                      │
+│          处理 AR 显示和设备交互                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. 环境要求
+
+### 2.1 硬件要求
+
+| 设备类型 | 要求 |
+|---------|------|
+| 开发电脑 | Windows 10/11 (64位) |
+| 目标设备 | RayNeo X2 AR 智能眼镜 |
+| 内存 | 至少 8GB RAM |
+| 存储空间 | 至少 20GB 可用空间 |
+
+### 2.2 软件要求
+
+| 软件 | 版本 | 说明 |
+|------|------|------|
+| Unity Editor | 2022.3.62f3c1 | 项目开发环境 |
+| Android Studio | Arctic Fox 或更高 | Android 构建支持 |
+| JDK | 11.x | Java 开发工具包 |
+| Gradle | 7.x | Android 构建工具 |
+
+### 2.3 网络要求
+
+- 需要访问互联网以下载依赖包和地图数据
+- 开发期间需要访问 GitHub 获取部分依赖
+
+---
+
+## 3. 项目结构
+
+```
+RayNeo/
+├── Assets/                    # Unity 资源目录
+│   ├── Editor/                # 编辑器扩展
+│   │   └── UniWebView/        # UniWebView 设置
+│   ├── Fonts/                 # 字体资源
+│   ├── Image/                 # 图片资源
+│   ├── Plugins/               # 第三方插件
+│   │   ├── Android/           # Android 插件
+│   │   ├── iOS/               # iOS 插件
+│   │   ├── WebView/           # WebView 接口
+│   │   └── dotnet-sdk-master/ # 百度 SDK
+│   ├── Samples/               # 示例资源
+│   ├── Scenes/                # 场景文件
+│   ├── Scripts/               # C# 脚本
+│   │   ├── GPS/               # GPS 相关
+│   │   ├── Search/            # 搜索导航
+│   │   ├── BaiduASRManager.cs # 百度语音管理
+│   │   ├── TencentMapWebView.cs # 腾讯地图管理
+│   │   └── QuitApp.cs         # 退出应用
+│   ├── StreamingAssets/       # 流式资源
+│   │   └── map.html           # 地图页面
+│   ├── TextMesh Pro/          # TextMeshPro 资源
+│   ├── UniWebView/            # UniWebView 插件
+│   └── XR/                    # XR 设置
+├── Library/                   # Unity 缓存目录
+├── Logs/                      # 日志目录
+├── Packages/                  # Package Manager 配置
+├── ProjectSettings/           # 项目设置
+├── Unity-Webview/             # WebView 原生代码
+└── UserSettings/              # 用户设置
+```
+
+---
+
+## 4. 环境搭建步骤
+
+### 4.1 Unity 安装
+
+1. **下载 Unity Hub**：从 [Unity 官网](https://unity.com/download) 下载并安装 Unity Hub
+2. **安装 Unity 2022.3.62f3c1**：
+   - 打开 Unity Hub，进入「Installs」页面
+   - 点击「Add」按钮
+   - 在版本列表中选择「2022.3.62f1」或手动输入版本号
+   - 确保勾选以下模块：
+     - Android Build Support
+     - OpenXR Plugin
+     - Visual Studio Tools for Unity
+
+### 4.2 项目导入
+
+1. **获取项目文件**：将项目文件复制到本地目录
+2. **打开项目**：
+   - 打开 Unity Hub，进入「Projects」页面
+   - 点击「Open」按钮，选择项目目录
+   - 等待 Unity 加载项目
+
+### 4.3 依赖安装
+
+#### 4.3.1 Package Manager 依赖
+
+Unity 将自动通过 Package Manager 安装以下依赖：
+
+| 包名 | 版本 | 来源 |
+|------|------|------|
+| com.unity.xr.openxr | 1.14.3 | Unity Registry |
+| com.unity.xr.rayneo.openxr | 本地 | 本地路径 |
+| com.whisper.unity | Git | GitHub |
+| com.coplaydev.unity-mcp | Git | GitHub |
+| com.unity.ide.traecn | Git | GitHub |
+
+**注意**：`com.unity.xr.rayneo.openxr` 需要手动配置本地路径。
+
+#### 4.3.2 手动安装依赖
+
+1. **UniWebView**：已包含在 `Assets/UniWebView/` 目录中
+2. **百度语音 SDK**：已包含在 `Assets/Plugins/dotnet-sdk-master/` 目录中
+
+### 4.4 配置 RayNeo OpenXR
+
+1. **设置 XR Plugin Management**：
+   - 打开「Project Settings」>「XR Plugin Management」
+   - 勾选「OpenXR」
+   - 点击「Install XR Plugin Management」
+
+2. **配置 RayNeo Provider**：
+   - 在「XR Plugin Management」中选择「OpenXR」
+   - 点击「Configure」按钮
+   - 确保「RayNeo OpenXR」已添加到「Active Loader」列表
+
+3. **设置 RayNeo 通用设置**：
+   - 打开「Project Settings」>「XR」>「RayNeo General Settings」
+   - 配置设备相关参数
+
+### 4.5 Android 构建配置
+
+1. **设置构建目标**：
+   - 打开「File」>「Build Settings」
+   - 选择「Android」作为目标平台
+   - 点击「Switch Platform」
+
+2. **配置 Player Settings**：
+   - 打开「Project Settings」>「Player」
+   - 在「Other Settings」中：
+     - 设置「Package Name」（如 `com.example.rayneo.nav`）
+     - 设置「Minimum API Level」为 Android 11.0 (API Level 30)
+     - 设置「Target API Level」为 Android 13.0 (API Level 33)
+   - 在「XR Settings」中：
+     - 勾选「Virtual Reality Supported」
+     - 添加「OpenXR」到 VR SDK 列表
+
+3. **配置 Android Manifest**：
+   - 文件路径：`Assets/Plugins/Android/AndroidManifest.xml`
+   - 确保包含以下权限：
+     ```xml
+     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+     <uses-permission android:name="android.permission.INTERNET" />
+     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+     ```
+
+---
+
+## 5. 关键配置说明
+
+### 5.1 腾讯地图 API
+
+地图页面位于 `Assets/StreamingAssets/map.html`，使用腾讯地图 JavaScript API：
+
+- **API Key**：已内置在 map.html 中
+- **功能**：
+  - 位置搜索（searchNearby / searchRegion）
+  - 路线规划（骑行路线）
+  - 实时位置更新
+
+### 5.2 百度语音识别
+
+语音识别配置位于 `Assets/Scripts/BaiduASRManager.cs`：
+
+- **APP_ID**：需在百度云控制台申请
+- **API_KEY**：需在百度云控制台申请
+- **SECRET_KEY**：需在百度云控制台申请
+
+**申请步骤**：
+1. 访问 [百度AI开放平台](https://ai.baidu.com/)
+2. 创建应用，选择「语音识别」服务
+3. 获取 APP_ID、API_KEY、SECRET_KEY
+4. 在 Inspector 面板中配置到 `BaiduASRManager` 组件
+
+### 5.3 手势交互
+
+手势交互通过 `SimpleTouch` 单例实现：
+
+| 手势 | 功能 | 触发方式 |
+|------|------|---------|
+| 单击 | 开始/停止语音输入 | 单指点按 |
+| 双击 | 取消导航 | 连续两次点按 |
+| 三击 | 确认导航 | 连续三次点按 |
+| 左滑 | 显示/隐藏 GPS 文本 | 向左滑动 |
+| 右滑 | 输入固定关键词 | 向右滑动 |
+
+---
+
+## 6. 构建与部署
+
+### 6.1 构建 APK
+
+1. **打开 Build Settings**：「File」>「Build Settings」
+2. **配置构建选项**：
+   - 选择「Android」平台
+   - 勾选「Development Build」（开发测试）
+   - 点击「Build」或「Build And Run」
+3. **选择输出路径**：指定 APK 输出目录
+
+### 6.2 部署到 RayNeo X2
+
+1. **连接设备**：使用 USB-C 数据线连接 RayNeo X2
+2. **启用开发者模式**：
+   - 在设备上进入「设置」>「关于设备」
+   - 连续点击「版本号」7次开启开发者模式
+   - 进入「开发者选项」，启用「USB 调试」
+3. **安装 APK**：
+   ```bash
+   adb install -r RayNeo.apk
+   ```
+
+### 6.3 调试日志
+
+使用 ADB 查看设备日志：
+```bash
+adb logcat -s Unity:D
+```
+
+---
+
+## 7. 常见问题与解决方案
+
+### 7.1 Unity 编译错误
+
+**问题**：`error CS0246: The type or namespace name 'Baidu' could not be found`
+
+**解决方案**：
+1. 确保百度 SDK 已正确导入
+2. 检查 `Assets/Plugins/dotnet-sdk-master/AipSdk.dll` 是否存在
+3. 在 Player Settings 中设置正确的 .NET 版本
+
+### 7.2 地图无法加载
+
+**问题**：地图页面显示空白或加载失败
+
+**解决方案**：
+1. 检查网络连接
+2. 确保腾讯地图 API Key 有效
+3. 检查 UniWebView 是否正确配置
+
+### 7.3 语音识别失败
+
+**问题**：语音输入无响应或识别失败
+
+**解决方案**：
+1. 检查麦克风权限是否已授予
+2. 确保百度云 API Key 正确配置
+3. 检查网络连接
+
+### 7.4 手势识别问题
+
+**问题**：手势操作无响应
+
+**解决方案**：
+1. 确保 `SimpleTouch` 单例已正确初始化
+2. 检查事件监听是否正确注册
+3. 确保相关 GameObject 处于激活状态
+
+---
+
+## 8. 版本历史
+
+| 版本 | 日期 | 更新内容 |
+|------|------|---------|
+| v1.0 | 2026-03 | 初始版本，基础导航功能 |
+| v1.1 | 2026-04 | 添加语音识别功能 |
+| v1.2 | 2026-04 | 添加手势交互功能 |
+| v1.3 | 2026-06 | 优化地图加载和重试机制 |
+
+---
+
+## 9. 附录
+
+### 9.1 参考链接
+
+| 资源 | 链接 |
+|------|------|
+| Unity 官网 | https://unity.com/ |
+| RayNeo 开发者文档 | https://developer.rayneo.com/ |
+| 腾讯地图 API | https://lbs.qq.com/ |
+| 百度语音 API | https://ai.baidu.com/tech/speech |
+
+### 9.2 联系方式
+
+如有问题，联系QQ1345039448获取支持。
+
+---
+
+**文档版本**: v1.0  
+**创建日期**: 2026-06-12  
+**适用项目**: RayNeo AR 导航应用
